@@ -4,6 +4,13 @@ import { OnChainCalculator } from "../target/types/on_chain_calculator";
 import { assert } from "chai";
 
 
+enum Operation {
+  Addition,
+  Subtraction,
+  Multiplication,
+  Division
+};
+
 describe("on-chain-calculator", async () => {
   const provider = anchor.AnchorProvider.local("http://127.0.0.1:8899");
   anchor.setProvider(provider);
@@ -15,10 +22,12 @@ describe("on-chain-calculator", async () => {
   const alice = anchor.web3.Keypair.generate();
   const bob = anchor.web3.Keypair.generate();
   const anatoly = anchor.web3.Keypair.generate();
-  const calculator = anchor.web3.Keypair.generate();
+  const calculator_alice = anchor.web3.Keypair.generate();
+  const calculator_anatoly = anchor.web3.Keypair.generate();
 
 
-  it("Initialize Calculator", async () => {
+
+  it("Initialize Calculator Alice", async () => {
     await airdrop(provider.connection, alice.publicKey);
 
     const operand_x = new anchor.BN(9)
@@ -26,21 +35,37 @@ describe("on-chain-calculator", async () => {
 
     await program.methods.initCalculator(operand_x, operand_y).accounts({
       updateAuthority: alice.publicKey,
-      calculator: calculator.publicKey,
-    }).signers([alice, calculator]).rpc({ commitment: "confirmed" })
+      calculator: calculator_alice.publicKey,
+    }).signers([alice, calculator_alice]).rpc({ commitment: "confirmed" })
 
-    const calculator_data = (await program.account.calculator.fetch(calculator.publicKey));
+    const calculator_data = (await program.account.calculator.fetch(calculator_alice.publicKey));
     assert.strictEqual(calculator_data.updateAuthority.toString(), alice.publicKey.toString());
     assert.strictEqual(calculator_data.x.toString(), operand_x.toString());
     assert.strictEqual(calculator_data.y.toString(), operand_y.toString());
 
+  })
+  it("Initialize Calculator Anatoly", async () => {
+    await airdrop(provider.connection, anatoly.publicKey);
+
+    const operand_x = new anchor.BN(9)
+    const operand_y = new anchor.BN(9)
+
+    await program.methods.initCalculator(operand_x, operand_y).accounts({
+      updateAuthority: anatoly.publicKey,
+      calculator: calculator_anatoly.publicKey,
+    }).signers([anatoly, calculator_anatoly]).rpc({ commitment: "confirmed" })
+
+    const calculator_data = (await program.account.calculator.fetch(calculator_anatoly.publicKey));
+    assert.strictEqual(calculator_data.updateAuthority.toString(), anatoly.publicKey.toString());
+    assert.strictEqual(calculator_data.x.toString(), operand_x.toString());
+    assert.strictEqual(calculator_data.y.toString(), operand_y.toString());
 
   })
   it("Do Addition", async () => {
-    const calculator_data = (await program.account.calculator.fetch(calculator.publicKey));
+    const calculator_data = (await program.account.calculator.fetch(calculator_alice.publicKey));
 
     let tx_sig = await program.methods.addition().accounts({
-      calculator: calculator.publicKey,
+      calculator: calculator_alice.publicKey,
     }).rpc({ commitment: "confirmed" })
 
     const tx = await provider.connection.getParsedTransaction(tx_sig, "confirmed")
@@ -53,16 +78,17 @@ describe("on-chain-calculator", async () => {
       assert.strictEqual(calculator_data.x.toString(), event.data.x.toString());
       assert.strictEqual(calculator_data.y.toString(), event.data.y.toString());
       assert.strictEqual(calculator_data.x.add(calculator_data.y).toString(), event.data.result.toString());
+      assert.deepEqual({ addition: {} }, event.data.op);
     }
     assert.isTrue(logsEmitted);
 
   })
   it("Do Subtraction", async () => {
 
-    const calculator_data = (await program.account.calculator.fetch(calculator.publicKey));
+    const calculator_data = (await program.account.calculator.fetch(calculator_alice.publicKey));
 
     let tx_sig = await program.methods.subtraction().accounts({
-      calculator: calculator.publicKey,
+      calculator: calculator_alice.publicKey,
     }).rpc({ commitment: "confirmed" })
 
     const tx = await provider.connection.getParsedTransaction(tx_sig, "confirmed")
@@ -75,16 +101,18 @@ describe("on-chain-calculator", async () => {
       assert.strictEqual(calculator_data.x.toString(), event.data.x.toString());
       assert.strictEqual(calculator_data.y.toString(), event.data.y.toString());
       assert.strictEqual(calculator_data.x.sub(calculator_data.y).toString(), event.data.result.toString());
+      assert.deepEqual({ subtraction: {} }, event.data.op);
+
     }
     assert.isTrue(logsEmitted);
   })
 
   it("Do Multiplication", async () => {
 
-    const calculator_data = (await program.account.calculator.fetch(calculator.publicKey));
+    const calculator_data = (await program.account.calculator.fetch(calculator_alice.publicKey));
 
     let tx_sig = await program.methods.multiplication().accounts({
-      calculator: calculator.publicKey,
+      calculator: calculator_alice.publicKey,
     }).rpc({ commitment: "confirmed" })
 
     const tx = await provider.connection.getParsedTransaction(tx_sig, "confirmed")
@@ -97,15 +125,17 @@ describe("on-chain-calculator", async () => {
       assert.strictEqual(calculator_data.x.toString(), event.data.x.toString());
       assert.strictEqual(calculator_data.y.toString(), event.data.y.toString());
       assert.strictEqual(calculator_data.x.mul(calculator_data.y).toString(), event.data.result.toString());
+      assert.deepEqual({ multiplication: {} }, event.data.op);
+
     }
     assert.isTrue(logsEmitted);
   })
   it("Do Division", async () => {
 
-    const calculator_data = (await program.account.calculator.fetch(calculator.publicKey));
+    const calculator_data = (await program.account.calculator.fetch(calculator_alice.publicKey));
 
     let tx_sig = await program.methods.division().accounts({
-      calculator: calculator.publicKey,
+      calculator: calculator_alice.publicKey,
     }).rpc({ commitment: "confirmed" })
 
     const tx = await provider.connection.getParsedTransaction(tx_sig, "confirmed")
@@ -118,6 +148,8 @@ describe("on-chain-calculator", async () => {
       assert.strictEqual(calculator_data.x.toString(), event.data.x.toString());
       assert.strictEqual(calculator_data.y.toString(), event.data.y.toString());
       assert.strictEqual(calculator_data.x.div(calculator_data.y).toString(), event.data.result.toString());
+      assert.deepEqual({ division: {} }, event.data.op);
+
     }
     assert.isTrue(logsEmitted);
   })
@@ -129,7 +161,7 @@ describe("on-chain-calculator", async () => {
     try {
       await program.methods.updateX(new_x).accounts({
         updateAuthority: bob.publicKey,
-        calculator: calculator.publicKey,
+        calculator: calculator_alice.publicKey,
       }).signers([bob]).rpc({ commitment: "confirmed" })
     } catch (error) {
       flag = "Failed"
@@ -146,7 +178,7 @@ describe("on-chain-calculator", async () => {
     try {
       await program.methods.updateY(new_y).accounts({
         updateAuthority: bob.publicKey,
-        calculator: calculator.publicKey,
+        calculator: calculator_alice.publicKey,
       }).signers([bob]).rpc({ commitment: "confirmed" })
     } catch (error) {
       flag = "Failed"
@@ -163,7 +195,7 @@ describe("on-chain-calculator", async () => {
     try {
       await program.methods.updateAuthority(new_authority.publicKey).accounts({
         updateAuthority: bob.publicKey,
-        calculator: calculator.publicKey,
+        calculator: calculator_alice.publicKey,
       }).signers([bob]).rpc({ commitment: "confirmed" })
     } catch (error) {
       flag = "Failed"
@@ -176,15 +208,15 @@ describe("on-chain-calculator", async () => {
   it("Update Authority", async () => {
     const new_author = anatoly;
 
-    const calculator_data_before = (await program.account.calculator.fetch(calculator.publicKey));
+    const calculator_data_before = (await program.account.calculator.fetch(calculator_alice.publicKey));
 
     await program.methods.updateAuthority(new_author.publicKey).accounts({
       updateAuthority: alice.publicKey,
-      calculator: calculator.publicKey,
+      calculator: calculator_alice.publicKey,
     }).signers([alice]).rpc({ commitment: "confirmed" })
 
 
-    const calculator_data_after = (await program.account.calculator.fetch(calculator.publicKey));
+    const calculator_data_after = (await program.account.calculator.fetch(calculator_alice.publicKey));
     assert.strictEqual(calculator_data_after.updateAuthority.toString(), new_author.publicKey.toString());
     assert.strictEqual(calculator_data_after.updateAuthority.toString(), new_author.publicKey.toString());
     assert.strictEqual(calculator_data_after.x.toString(), calculator_data_before.x.toString());
@@ -192,17 +224,17 @@ describe("on-chain-calculator", async () => {
 
   })
 
-  it("Update with new Authority", async () => {
+  it("Update X with new Authority", async () => {
     const new_x = new anchor.BN(15);
-    const calculator_data_before = (await program.account.calculator.fetch(calculator.publicKey));
+    const calculator_data_before = (await program.account.calculator.fetch(calculator_alice.publicKey));
 
     await program.methods.updateX(new_x).accounts({
       updateAuthority: anatoly.publicKey,
-      calculator: calculator.publicKey,
+      calculator: calculator_alice.publicKey,
     }).signers([anatoly]).rpc({ commitment: "confirmed" })
 
 
-    const calculator_data_after = (await program.account.calculator.fetch(calculator.publicKey));
+    const calculator_data_after = (await program.account.calculator.fetch(calculator_alice.publicKey));
     assert.strictEqual(calculator_data_after.x.toString(), new_x.toString());
     assert.strictEqual(calculator_data_after.y.toString(), calculator_data_before.y.toString());
     assert.strictEqual(calculator_data_after.updateAuthority.toString(), calculator_data_before.updateAuthority.toString());
@@ -211,10 +243,10 @@ describe("on-chain-calculator", async () => {
 
   it("Multiplication still works", async () => {
 
-    const calculator_data = (await program.account.calculator.fetch(calculator.publicKey));
+    const calculator_data = (await program.account.calculator.fetch(calculator_alice.publicKey));
 
     let tx_sig = await program.methods.multiplication().accounts({
-      calculator: calculator.publicKey,
+      calculator: calculator_alice.publicKey,
     }).rpc({ commitment: "confirmed" })
 
     const tx = await provider.connection.getParsedTransaction(tx_sig, "confirmed")
@@ -227,8 +259,25 @@ describe("on-chain-calculator", async () => {
       assert.strictEqual(calculator_data.x.toString(), event.data.x.toString());
       assert.strictEqual(calculator_data.y.toString(), event.data.y.toString());
       assert.strictEqual(calculator_data.x.mul(calculator_data.y).toString(), event.data.result.toString());
+      assert.deepEqual({ multiplication: {} }, event.data.op);
+
     }
     assert.isTrue(logsEmitted);
+  })
+  it("Anatoly has autority over both Calculators", async () => {
+    const new_x = new anchor.BN(58);
+    const calculator_data_before = (await program.account.calculator.fetch(calculator_anatoly.publicKey));
+
+    await program.methods.updateX(new_x).accounts({
+      updateAuthority: anatoly.publicKey,
+      calculator: calculator_anatoly.publicKey,
+    }).signers([anatoly]).rpc({ commitment: "confirmed" })
+
+
+    const calculator_data_after = (await program.account.calculator.fetch(calculator_anatoly.publicKey));
+    assert.strictEqual(calculator_data_after.x.toString(), new_x.toString());
+    assert.strictEqual(calculator_data_after.y.toString(), calculator_data_before.y.toString());
+    assert.strictEqual(calculator_data_after.updateAuthority.toString(), calculator_data_before.updateAuthority.toString());
   })
 });
 

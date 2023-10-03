@@ -10,7 +10,6 @@ declare_id!("8kCVvW4147A2CrhW2Dr4ety2PJ2ds7oUavRNCVtBeew6");
 #[program]
 pub mod on_chain_calculator {
     use super::*;
-
     // ------------------------------------------------------------------------------------------------
     // Functions
     //
@@ -64,7 +63,8 @@ pub mod on_chain_calculator {
         emit!(CalculatorEvent {
             x: operand_x,
             y: operand_y,
-            result
+            result,
+            op: Operation::Addition,
         });
         Ok(())
     }
@@ -102,6 +102,9 @@ pub struct InitializeCalculator<'info> {
 #[derive(Accounts)]
 pub struct ChangeInternalState<'info> {
     pub update_authority: Signer<'info>,
+    // Using the 'has_one' constraint, we can verify that the authority
+    // corresponds to the authority that was initially initialized
+    // and eventually saved within the Calculator data
     #[account(mut,
         has_one = update_authority @ CalculatorError::WrongPrivileges
     )]
@@ -152,5 +155,13 @@ pub struct CalculatorEvent {
     pub x: i64,
     pub y: i64,
     pub result: Option<i64>,
+    pub op: Operation,
+}
+#[derive(AnchorSerialize, AnchorDeserialize)]
+pub enum Operation {
+    Addition,
+    Subtraction,
+    Multiplication,
+    Division,
 }
 // ------------------------------------------------------------------------------------------------
