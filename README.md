@@ -12,7 +12,7 @@ In the previous task, we implemented a calculator, and now we will bring part of
 
 
 ## Submission Process
-As you may not be familiar with the Anchor Project layout, inside `programs/on-chain-calculator/lib.rs`, you can find the program logic. Filling in the TODO parts in this file is also your task. Implement the corresponding TODO parts inside `lib.rs`, then test your implementation with the command mentioned below, and when you're done, push the changes of `lib.rs` to GitHub. **Please do not commit any other changes, as it will make the evaluation process more difficult.**
+As you may not be familiar with the Anchor Project layout, inside `programs/on-chain-calculator/src/lib.rs`, you can find the program logic. Filling in the TODO parts in this file is also your task. Implement the corresponding TODO parts inside `lib.rs`, then test your implementation with the command mentioned below, and when you're done, push the changes of `lib.rs` to GitHub. **Please do not commit any other changes, as it will make the evaluation process more difficult.**
 
 ## Deadline
 The deadline for this task is **Tuesday, October 10th, at 23:59 UTC**. Note that we will not accept submissions after the deadline.
