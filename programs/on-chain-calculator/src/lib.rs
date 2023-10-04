@@ -38,32 +38,32 @@ pub mod on_chain_calculator {
         todo!()
     }
     // TODO: Implement the `update_authority` function in the same manner as the update functions above.
-    // To pass tests, use the function name as follows: `update_authority`
+
+    // HINT - function declaration can look like:
+    // pub fn update_authority(ctx: Context<ChangeInternalState>, new_authority: Pubkey) -> Result<()> {}
 
     /// This function reads data from the Calculator Account and
     /// performs an addition operation. The result, as well as the operands,
-    /// are then emitted in the logs. You can subscribe to the logs off-chain
+    /// are then emitted in the logs. We can then subscribe to the logs off-chain
     /// to check the correctness of the operands and the result.
-    /// Emitting into the logs is only important for testing purposes;
-    /// DO NOT ALTER IT!
     pub fn addition(ctx: Context<Compute>) -> Result<()> {
         let calculator = &ctx.accounts.calculator;
 
         // TODO
-        let operand_x = todo!();
+        let operand_x: i64 = todo!();
         // TODO
-        let operand_y = todo!();
+        let operand_y: i64 = todo!();
 
         // TODO
-        let result = todo!();
+        let result: Option<i64> = todo!();
 
         // The code below will emit operands with the result into logs.
         // We then subscribe to the logs inside tests to verify if the Calculator works correctly.
-        // DO NOT MODIFY
         emit!(CalculatorEvent {
             x: operand_x,
             y: operand_y,
             result,
+            // Don`t forget to update this in other functions
             op: Operation::Addition,
         });
         Ok(())
@@ -88,7 +88,8 @@ pub mod on_chain_calculator {
 // we mark it with `init` (using `init`, the account is automatically mutable), and much more.
 #[derive(Accounts)]
 pub struct InitializeCalculator<'info> {
-    #[account(mut)] // mark account as mutable
+    #[account(mut)]
+    // mark account as mutable because it will pay fees for calculator initialization
     pub update_authority: Signer<'info>,
     #[account(
         init, // initialize account
@@ -103,8 +104,8 @@ pub struct InitializeCalculator<'info> {
 pub struct ChangeInternalState<'info> {
     pub update_authority: Signer<'info>,
     // Using the 'has_one' constraint, we can verify that the authority
-    // corresponds to the authority that was initially initialized
-    // and eventually saved within the Calculator data
+    // corresponds to the authority that was initialized
+    // and eventually saved within the Calculator data within `init_calculator` function
     #[account(mut,
         has_one = update_authority @ CalculatorError::WrongPrivileges
     )]
@@ -158,6 +159,7 @@ pub struct CalculatorEvent {
     pub op: Operation,
 }
 #[derive(AnchorSerialize, AnchorDeserialize)]
+/// Enum that helps differentiate between performed operations emitted into logs.
 pub enum Operation {
     Addition,
     Subtraction,
