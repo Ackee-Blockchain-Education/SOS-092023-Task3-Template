@@ -21,7 +21,7 @@ The deadline for this task is **Tuesday, October 10th, at 23:59 UTC**. Note that
 We will evaluate your submission using the same test suite provided in this task. Therefore, the requirements for this task are to pass **100%** of the provided tests.
 
 ## Setup
-for this Task you need:
+For this Task you need:
 - [Rust installed](https://www.rust-lang.org/tools/install)
     - Make sure to use stable version:
 ```
@@ -36,7 +36,7 @@ rustup default stable
 ### Commands
 With the setup I described above, you should be able to run the following commands.
 
-1. Once you clone the repo, run:
+1. You should have **Yarn** installed as it is one of the steps during **Anchor** installation, so once you clone the repo, you should be able to run:
 ```
 yarn install
 ```
@@ -54,6 +54,11 @@ anchor test
 If you encounter any questions or issues during the installation process or have any inquiries related to the task, please feel free to initiate a discussion on Discord within the Issues Forum.
 
 ## Hints and Useful Links
+[Account Context](https://docs.rs/anchor-lang/latest/anchor_lang/derive.Accounts.html)
+
+[Account Model](https://solana.wiki/zh-cn/docs/account-model/)
+
+[Solana Development Course](https://www.soldev.app/course)
 
 
 -----
