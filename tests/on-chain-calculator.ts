@@ -223,9 +223,24 @@ describe("on-chain-calculator", async () => {
     assert.strictEqual(calculator_data_after.y.toString(), calculator_data_before.y.toString());
 
   })
+  it("Alice no more has privileges", async () => {
+    const new_y = new anchor.BN(15);
 
+    let flag = "This should fail"
+    try {
+      await program.methods.updateY(new_y).accounts({
+        updateAuthority: alice.publicKey,
+        calculator: calculator_alice.publicKey,
+      }).signers([alice]).rpc({ commitment: "confirmed" })
+    } catch (error) {
+      flag = "Failed"
+      const err = anchor.AnchorError.parse(error.logs);
+      assert.strictEqual(err.error.errorCode.code, "WrongPrivileges");
+    }
+    assert.strictEqual(flag, "Failed");
+  })
   it("Update X with new Authority", async () => {
-    const new_x = new anchor.BN(15);
+    const new_x = new anchor.BN(459);
     const calculator_data_before = (await program.account.calculator.fetch(calculator_alice.publicKey));
 
     await program.methods.updateX(new_x).accounts({
@@ -237,6 +252,23 @@ describe("on-chain-calculator", async () => {
     const calculator_data_after = (await program.account.calculator.fetch(calculator_alice.publicKey));
     assert.strictEqual(calculator_data_after.x.toString(), new_x.toString());
     assert.strictEqual(calculator_data_after.y.toString(), calculator_data_before.y.toString());
+    assert.strictEqual(calculator_data_after.updateAuthority.toString(), calculator_data_before.updateAuthority.toString());
+
+  })
+
+  it("Update Y with new Authority", async () => {
+    const new_y = new anchor.BN(597);
+    const calculator_data_before = (await program.account.calculator.fetch(calculator_alice.publicKey));
+
+    await program.methods.updateY(new_y).accounts({
+      updateAuthority: anatoly.publicKey,
+      calculator: calculator_alice.publicKey,
+    }).signers([anatoly]).rpc({ commitment: "confirmed" })
+
+
+    const calculator_data_after = (await program.account.calculator.fetch(calculator_alice.publicKey));
+    assert.strictEqual(calculator_data_after.y.toString(), new_y.toString());
+    assert.strictEqual(calculator_data_after.x.toString(), calculator_data_before.x.toString());
     assert.strictEqual(calculator_data_after.updateAuthority.toString(), calculator_data_before.updateAuthority.toString());
 
   })
@@ -265,19 +297,11 @@ describe("on-chain-calculator", async () => {
     assert.isTrue(logsEmitted);
   })
   it("Anatoly has autority over both Calculators", async () => {
-    const new_x = new anchor.BN(58);
-    const calculator_data_before = (await program.account.calculator.fetch(calculator_anatoly.publicKey));
-
-    await program.methods.updateX(new_x).accounts({
-      updateAuthority: anatoly.publicKey,
-      calculator: calculator_anatoly.publicKey,
-    }).signers([anatoly]).rpc({ commitment: "confirmed" })
+    const calculator_anatoly1_data = (await program.account.calculator.fetch(calculator_anatoly.publicKey));
+    const calculator_anatoly2_data = (await program.account.calculator.fetch(calculator_alice.publicKey));
 
 
-    const calculator_data_after = (await program.account.calculator.fetch(calculator_anatoly.publicKey));
-    assert.strictEqual(calculator_data_after.x.toString(), new_x.toString());
-    assert.strictEqual(calculator_data_after.y.toString(), calculator_data_before.y.toString());
-    assert.strictEqual(calculator_data_after.updateAuthority.toString(), calculator_data_before.updateAuthority.toString());
+    assert.strictEqual(calculator_anatoly1_data.updateAuthority.toString(), calculator_anatoly2_data.updateAuthority.toString());
   })
 });
 
